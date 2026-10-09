@@ -1,0 +1,132 @@
+### Roteiro de demonstração — execute as requisições em ordem (IntelliJ HTTP Client).
+### Ajuste @senha para o ADMIN_PASSWORD definido no seu .env.
+@base = http://localhost:8080
+@senha = troque-esta-senha-admin
+@cpf = 529.982.247-25
+
+### 1. Sem token: APIs administrativas respondem 401
+GET {{base}}/api/admin/clientes
+
+### 2. Login (JWT)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"usuario": "admin", "senha": "{{senha}}"}
+
+> {% client.global.set("token", response.body.token); %}
+
+### 3. Validação de CPF (deve retornar 400)
+POST {{base}}/api/admin/clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"nome": "Cliente Inválido", "documento": "111.111.111-11"}
+
+### 4. Cadastro do cliente
+POST {{base}}/api/admin/clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"nome": "Maria da Silva", "documento": "{{cpf}}", "email": "maria@email.com", "telefone": "(11) 98888-7777"}
+
+### 5. Catálogo de serviços e estoque de peças (dados iniciais)
+GET {{base}}/api/admin/servicos
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/admin/pecas
+Authorization: Bearer {{token}}
+
+### 6. Abertura da OS: cliente por CPF, veículo cadastrado na hora, serviço + insumo
+POST {{base}}/api/admin/ordens-servico
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "documentoCliente": "{{cpf}}",
+  "veiculo": {"placa": "BRA2E19", "marca": "Volkswagen", "modelo": "Gol", "ano": 2020},
+  "descricaoProblema": "Revisão dos 30 mil km e barulho ao frear",
+  "servicos": [{"id": "8f9a1c52-7c1e-4a51-9a63-1d5b8f6f0a01", "quantidade": 1}],
+  "pecas": [{"id": "5c7d2e10-3b4a-4c8e-8f21-6a9b0c1d2e01", "quantidade": 4}]
+}
+
+> {% client.global.set("os", response.body.id); %}
+
+### 7. Início do diagnóstico (RECEBIDA -> EM_DIAGNOSTICO)
+POST {{base}}/api/admin/ordens-servico/{{os}}/diagnostico
+Authorization: Bearer {{token}}
+
+### 8. Laudo do diagnóstico
+PUT {{base}}/api/admin/ordens-servico/{{os}}/diagnostico
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"diagnostico": "Pastilhas dianteiras gastas; filtro de óleo saturado"}
+
+### 9. Inclusão de serviço (revisão de freios) — orçamento recalculado
+POST {{base}}/api/admin/ordens-servico/{{os}}/servicos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"id": "8f9a1c52-7c1e-4a51-9a63-1d5b8f6f0a04", "quantidade": 1}
+
+### 10. Inclusão de peças (filtro + pastilhas)
+POST {{base}}/api/admin/ordens-servico/{{os}}/pecas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"id": "5c7d2e10-3b4a-4c8e-8f21-6a9b0c1d2e02", "quantidade": 1}
+
+###
+POST {{base}}/api/admin/ordens-servico/{{os}}/pecas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"id": "5c7d2e10-3b4a-4c8e-8f21-6a9b0c1d2e03", "quantidade": 1}
+
+### 11. Envio do orçamento ao cliente (EM_DIAGNOSTICO -> AGUARDANDO_APROVACAO)
+POST {{base}}/api/admin/ordens-servico/{{os}}/orcamento/envio
+Authorization: Bearer {{token}}
+
+### 12. Cliente acompanha a OS (sem token, identificado pelo CPF)
+GET {{base}}/api/publico/ordens-servico/{{os}}
+X-Documento-Cliente: {{cpf}}
+
+### 13. Outro documento não enxerga a OS (404)
+GET {{base}}/api/publico/ordens-servico/{{os}}
+X-Documento-Cliente: 11.222.333/0001-81
+
+### 14. Cliente aprova o orçamento (-> EM_EXECUCAO + baixa de estoque)
+POST {{base}}/api/publico/ordens-servico/{{os}}/orcamento/resposta
+X-Documento-Cliente: {{cpf}}
+Content-Type: application/json
+
+{"aprovado": true}
+
+### 15. Estoque baixado (óleo, filtro, pastilhas)
+GET {{base}}/api/admin/pecas
+Authorization: Bearer {{token}}
+
+### 16. Transição inválida: entregar antes de finalizar (422)
+POST {{base}}/api/admin/ordens-servico/{{os}}/entrega
+Authorization: Bearer {{token}}
+
+### 17. Finalização (EM_EXECUCAO -> FINALIZADA)
+POST {{base}}/api/admin/ordens-servico/{{os}}/finalizacao
+Authorization: Bearer {{token}}
+
+### 18. Entrega (FINALIZADA -> ENTREGUE) — veja o histórico completo de status
+POST {{base}}/api/admin/ordens-servico/{{os}}/entrega
+Authorization: Bearer {{token}}
+
+### 19. Listagem de OS por status
+GET {{base}}/api/admin/ordens-servico?status=ENTREGUE
+Authorization: Bearer {{token}}
+
+### 20. Tempo médio de execução
+GET {{base}}/api/admin/relatorios/tempo-medio-execucao
+Authorization: Bearer {{token}}
+
+### 21. Peças abaixo do estoque mínimo
+GET {{base}}/api/admin/pecas?abaixoDoMinimo=true
+Authorization: Bearer {{token}}

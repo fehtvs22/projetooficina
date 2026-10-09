@@ -1,0 +1,2277 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Oficina Mecânica - Sistema Integrado de Atendimento e Execução de Serviços",
+        "description": "MVP do back-end da oficina: ordens de serviço, clientes, veículos, serviços, peças/insumos e estoque.\n\n**Como autenticar:** chame `POST /api/auth/login`, copie o `token` e clique em **Authorize**. As rotas `/api/admin/**` exigem o token; as rotas `/api/publico/**` são usadas pelo cliente para acompanhar e aprovar a OS informando o CPF/CNPJ.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Generated server url"
+        }
+    ],
+    "tags": [
+        {
+            "name": "8. Acompanhamento pelo cliente",
+            "description": "Rotas abertas; o cliente informa seu CPF/CNPJ no cabeçalho X-Documento-Cliente"
+        },
+        {
+            "name": "6. Ordens de serviço",
+            "description": "Fluxo da OS na oficina: abertura, itens, orçamento, execução e entrega"
+        },
+        {
+            "name": "1. Autenticação",
+            "description": "Obtenção do token JWT para as APIs administrativas"
+        },
+        {
+            "name": "4. Serviços",
+            "description": "Catálogo de serviços (mão de obra)"
+        },
+        {
+            "name": "5. Peças e insumos",
+            "description": "Cadastro e controle de estoque"
+        }
+    ],
+    "paths": {
+        "/api/admin/veiculos/{id}": {
+            "get": {
+                "tags": [
+                    "3. Veículos"
+                ],
+                "summary": "Detalha um veículo",
+                "operationId": "buscar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VeiculoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "3. Veículos"
+                ],
+                "summary": "Atualiza marca, modelo, ano e proprietário (a placa não pode mudar)",
+                "operationId": "atualizar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VeiculoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VeiculoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "3. Veículos"
+                ],
+                "summary": "Remove um veículo sem ordens de serviço",
+                "operationId": "remover",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/servicos/{id}": {
+            "get": {
+                "tags": [
+                    "4. Serviços"
+                ],
+                "summary": "Detalha um serviço",
+                "operationId": "buscar_1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "4. Serviços"
+                ],
+                "summary": "Atualiza um serviço (OS já abertas mantêm o preço da inclusão)",
+                "operationId": "atualizar_1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ServicoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "4. Serviços"
+                ],
+                "summary": "Remove um serviço que não foi usado em ordens de serviço",
+                "operationId": "remover_1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/pecas/{id}": {
+            "get": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Detalha uma peça/insumo",
+                "operationId": "buscar_2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PecaResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Atualiza o cadastro (o saldo só muda pelas rotas de estoque)",
+                "operationId": "atualizar_2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PecaRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PecaResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Remove uma peça/insumo que não foi usada em ordens de serviço",
+                "operationId": "remover_2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/diagnostico": {
+            "put": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Registra o laudo do diagnóstico",
+                "operationId": "registrarDiagnostico",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DiagnosticoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Inicia o diagnóstico (RECEBIDA -> EM_DIAGNOSTICO)",
+                "operationId": "iniciarDiagnostico",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/clientes/{id}": {
+            "get": {
+                "tags": [
+                    "2. Clientes"
+                ],
+                "summary": "Detalha um cliente",
+                "operationId": "buscar_3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClienteResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "2. Clientes"
+                ],
+                "summary": "Atualiza nome e contatos do cliente (o documento não pode mudar)",
+                "operationId": "atualizar_3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClienteRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClienteResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "2. Clientes"
+                ],
+                "summary": "Remove um cliente sem veículos",
+                "operationId": "remover_3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/publico/ordens-servico/{id}/orcamento/resposta": {
+            "post": {
+                "tags": [
+                    "8. Acompanhamento pelo cliente"
+                ],
+                "summary": "Aprova ou rejeita o orçamento",
+                "operationId": "responder",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Documento-Cliente",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "529.982.247-25"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RespostaOrcamentoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "1. Autenticação"
+                ],
+                "summary": "Autentica um usuário administrativo e retorna o token JWT",
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/veiculos": {
+            "get": {
+                "tags": [
+                    "3. Veículos"
+                ],
+                "summary": "Lista veículos, opcionalmente de um cliente",
+                "operationId": "listar",
+                "parameters": [
+                    {
+                        "name": "clienteId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/VeiculoResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "3. Veículos"
+                ],
+                "summary": "Cadastra um veículo (placa antiga ou Mercosul validada)",
+                "operationId": "cadastrar",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VeiculoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VeiculoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/servicos": {
+            "get": {
+                "tags": [
+                    "4. Serviços"
+                ],
+                "summary": "Lista os serviços",
+                "operationId": "listar_1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServicoResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "4. Serviços"
+                ],
+                "summary": "Cadastra um serviço",
+                "operationId": "cadastrar_1",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ServicoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/pecas": {
+            "get": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Lista peças/insumos; 'abaixoDoMinimo=true' mostra só os que precisam de reposição",
+                "operationId": "listar_2",
+                "parameters": [
+                    {
+                        "name": "abaixoDoMinimo",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PecaResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Cadastra uma peça ou insumo com saldo inicial",
+                "operationId": "cadastrar_2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PecaRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PecaResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/pecas/{id}/estoque/saida": {
+            "post": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Registra saída manual (ajuste/perda) do estoque",
+                "operationId": "saida",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/QuantidadeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PecaResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/pecas/{id}/estoque/entrada": {
+            "post": {
+                "tags": [
+                    "5. Peças e insumos"
+                ],
+                "summary": "Registra entrada (reposição) no estoque",
+                "operationId": "entrada",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/QuantidadeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PecaResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico": {
+            "get": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Lista as OS (mais antigas primeiro), opcionalmente por status",
+                "operationId": "listar_3",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "RECEBIDA",
+                                "EM_DIAGNOSTICO",
+                                "AGUARDANDO_APROVACAO",
+                                "EM_EXECUCAO",
+                                "FINALIZADA",
+                                "ENTREGUE"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrdemServicoResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Abre uma OS (status RECEBIDA) identificando o cliente por CPF/CNPJ",
+                "operationId": "abrir",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AbrirOrdemServicoRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/servicos": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Inclui um serviço (orçamento recalculado automaticamente)",
+                "operationId": "adicionarServico",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ItemRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/pecas": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Inclui uma peça/insumo (verifica disponibilidade em estoque)",
+                "operationId": "adicionarPeca",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ItemRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/orcamento/rejeicao": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Registra a rejeição do orçamento (-> FINALIZADA sem execução)",
+                "operationId": "rejeitarOrcamento",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RejeicaoRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/orcamento/envio": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Envia o orçamento ao cliente (EM_DIAGNOSTICO -> AGUARDANDO_APROVACAO)",
+                "operationId": "enviarOrcamento",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/orcamento/aprovacao": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Registra a aprovação recebida pela oficina (-> EM_EXECUCAO e baixa de estoque)",
+                "operationId": "aprovarOrcamento",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/finalizacao": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Finaliza a execução (EM_EXECUCAO -> FINALIZADA)",
+                "operationId": "finalizar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/entrega": {
+            "post": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Registra a entrega do veículo (FINALIZADA -> ENTREGUE)",
+                "operationId": "entregar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/clientes": {
+            "get": {
+                "tags": [
+                    "2. Clientes"
+                ],
+                "summary": "Lista clientes; filtra por CPF/CNPJ quando 'documento' é informado",
+                "operationId": "listar_4",
+                "parameters": [
+                    {
+                        "name": "documento",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ClienteResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "2. Clientes"
+                ],
+                "summary": "Cadastra um cliente (CPF ou CNPJ validado)",
+                "operationId": "cadastrar_3",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClienteRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClienteResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/publico/ordens-servico": {
+            "get": {
+                "tags": [
+                    "8. Acompanhamento pelo cliente"
+                ],
+                "summary": "Lista as OS do cliente",
+                "operationId": "listar_5",
+                "parameters": [
+                    {
+                        "name": "X-Documento-Cliente",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "529.982.247-25"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrdemServicoResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/publico/ordens-servico/{id}": {
+            "get": {
+                "tags": [
+                    "8. Acompanhamento pelo cliente"
+                ],
+                "summary": "Consulta o andamento (status, orçamento e histórico) de uma OS",
+                "operationId": "consultar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Documento-Cliente",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "529.982.247-25"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/relatorios/tempo-medio-execucao": {
+            "get": {
+                "tags": [
+                    "7. Monitoramento"
+                ],
+                "summary": "Tempo médio de execução (aprovação até finalização), geral e por serviço",
+                "operationId": "tempoMedioExecucao",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TempoMedioExecucaoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}": {
+            "get": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Detalha uma OS com itens, orçamento e histórico de status",
+                "operationId": "detalhar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/servicos/{itemId}": {
+            "delete": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Remove um serviço da OS",
+                "operationId": "removerServico",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/ordens-servico/{id}/pecas/{itemId}": {
+            "delete": {
+                "tags": [
+                    "6. Ordens de serviço"
+                ],
+                "summary": "Remove uma peça/insumo da OS",
+                "operationId": "removerPeca",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrdemServicoResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "VeiculoRequest": {
+                "type": "object",
+                "properties": {
+                    "placa": {
+                        "type": "string",
+                        "description": "Padrão antigo (ABC1234) ou Mercosul (ABC1D23)",
+                        "example": "BRA2E19",
+                        "minLength": 1
+                    },
+                    "marca": {
+                        "type": "string",
+                        "example": "Volkswagen",
+                        "maxLength": 60,
+                        "minLength": 0
+                    },
+                    "modelo": {
+                        "type": "string",
+                        "example": "Gol",
+                        "maxLength": 80,
+                        "minLength": 0
+                    },
+                    "ano": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 2020
+                    },
+                    "clienteId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "ano",
+                    "clienteId",
+                    "marca",
+                    "modelo",
+                    "placa"
+                ]
+            },
+            "VeiculoResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "placa": {
+                        "type": "string"
+                    },
+                    "marca": {
+                        "type": "string"
+                    },
+                    "modelo": {
+                        "type": "string"
+                    },
+                    "ano": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "clienteId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "ServicoRequest": {
+                "type": "object",
+                "properties": {
+                    "nome": {
+                        "type": "string",
+                        "example": "Troca de óleo",
+                        "maxLength": 120,
+                        "minLength": 0
+                    },
+                    "descricao": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                    },
+                    "preco": {
+                        "type": "number",
+                        "example": 120.0,
+                        "minimum": 0.0
+                    },
+                    "tempoEstimadoMinutos": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 40
+                    }
+                },
+                "required": [
+                    "nome",
+                    "preco",
+                    "tempoEstimadoMinutos"
+                ]
+            },
+            "ServicoResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "nome": {
+                        "type": "string"
+                    },
+                    "descricao": {
+                        "type": "string"
+                    },
+                    "preco": {
+                        "type": "number"
+                    },
+                    "tempoEstimadoMinutos": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "PecaRequest": {
+                "type": "object",
+                "properties": {
+                    "codigo": {
+                        "type": "string",
+                        "example": "FILTRO-AR",
+                        "maxLength": 40,
+                        "minLength": 0
+                    },
+                    "nome": {
+                        "type": "string",
+                        "example": "Filtro de ar",
+                        "maxLength": 120,
+                        "minLength": 0
+                    },
+                    "descricao": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                    },
+                    "tipo": {
+                        "type": "string",
+                        "enum": [
+                            "PECA",
+                            "INSUMO"
+                        ]
+                    },
+                    "preco": {
+                        "type": "number",
+                        "example": 55.0,
+                        "minimum": 0.0
+                    },
+                    "quantidadeInicial": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Saldo inicial (ignorado na atualização; use as rotas de estoque)",
+                        "example": 10
+                    },
+                    "estoqueMinimo": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 2
+                    }
+                },
+                "required": [
+                    "codigo",
+                    "estoqueMinimo",
+                    "nome",
+                    "preco",
+                    "tipo"
+                ]
+            },
+            "PecaResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "codigo": {
+                        "type": "string"
+                    },
+                    "nome": {
+                        "type": "string"
+                    },
+                    "descricao": {
+                        "type": "string"
+                    },
+                    "tipo": {
+                        "type": "string"
+                    },
+                    "preco": {
+                        "type": "number"
+                    },
+                    "quantidadeEstoque": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "estoqueMinimo": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "abaixoDoMinimo": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "DiagnosticoRequest": {
+                "type": "object",
+                "properties": {
+                    "diagnostico": {
+                        "type": "string",
+                        "example": "Pastilhas dianteiras gastas; fluido de freio vencido",
+                        "maxLength": 2000,
+                        "minLength": 0
+                    }
+                },
+                "required": [
+                    "diagnostico"
+                ]
+            },
+            "ClienteResumo": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "nome": {
+                        "type": "string"
+                    },
+                    "documento": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Historico": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string"
+                    },
+                    "ocorridoEm": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Item": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "referenciaId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "descricao": {
+                        "type": "string"
+                    },
+                    "precoUnitario": {
+                        "type": "number"
+                    },
+                    "quantidade": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "subtotal": {
+                        "type": "number"
+                    }
+                }
+            },
+            "OrcamentoResponse": {
+                "type": "object",
+                "properties": {
+                    "valorServicos": {
+                        "type": "number"
+                    },
+                    "valorPecas": {
+                        "type": "number"
+                    },
+                    "valorTotal": {
+                        "type": "number"
+                    },
+                    "situacao": {
+                        "type": "string"
+                    },
+                    "enviadoEm": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "respondidoEm": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "motivoRejeicao": {
+                        "type": "string"
+                    }
+                }
+            },
+            "OrdemServicoResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "cliente": {
+                        "$ref": "#/components/schemas/ClienteResumo"
+                    },
+                    "veiculo": {
+                        "$ref": "#/components/schemas/VeiculoResumo"
+                    },
+                    "descricaoProblema": {
+                        "type": "string"
+                    },
+                    "diagnostico": {
+                        "type": "string"
+                    },
+                    "servicos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Item"
+                        }
+                    },
+                    "pecas": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Item"
+                        }
+                    },
+                    "orcamento": {
+                        "$ref": "#/components/schemas/OrcamentoResponse"
+                    },
+                    "historico": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Historico"
+                        }
+                    },
+                    "abertaEm": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "inicioExecucao": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "fimExecucao": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "entregueEm": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "duracaoExecucaoMinutos": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "VeiculoResumo": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "placa": {
+                        "type": "string"
+                    },
+                    "marca": {
+                        "type": "string"
+                    },
+                    "modelo": {
+                        "type": "string"
+                    },
+                    "ano": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "ClienteRequest": {
+                "type": "object",
+                "properties": {
+                    "nome": {
+                        "type": "string",
+                        "example": "Maria da Silva",
+                        "maxLength": 150,
+                        "minLength": 0
+                    },
+                    "documento": {
+                        "type": "string",
+                        "description": "CPF ou CNPJ, com ou sem máscara",
+                        "example": "529.982.247-25",
+                        "minLength": 1
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "maria@email.com",
+                        "maxLength": 150,
+                        "minLength": 0
+                    },
+                    "telefone": {
+                        "type": "string",
+                        "example": "(11) 98888-7777",
+                        "maxLength": 20,
+                        "minLength": 0
+                    }
+                },
+                "required": [
+                    "documento",
+                    "nome"
+                ]
+            },
+            "ClienteResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "nome": {
+                        "type": "string"
+                    },
+                    "documento": {
+                        "type": "string"
+                    },
+                    "tipoDocumento": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "telefone": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RespostaOrcamentoRequest": {
+                "type": "object",
+                "properties": {
+                    "aprovado": {
+                        "type": "boolean",
+                        "description": "true para aprovar, false para rejeitar",
+                        "example": true
+                    },
+                    "motivo": {
+                        "type": "string",
+                        "description": "Motivo (opcional) em caso de rejeição",
+                        "maxLength": 500,
+                        "minLength": 0
+                    }
+                },
+                "required": [
+                    "aprovado"
+                ]
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "usuario": {
+                        "type": "string",
+                        "example": "admin",
+                        "minLength": 1
+                    },
+                    "senha": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "senha",
+                    "usuario"
+                ]
+            },
+            "TokenResponse": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    },
+                    "tipo": {
+                        "type": "string"
+                    },
+                    "expiraEmSegundos": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "QuantidadeRequest": {
+                "type": "object",
+                "properties": {
+                    "quantidade": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 5
+                    }
+                },
+                "required": [
+                    "quantidade"
+                ]
+            },
+            "AbrirOrdemServicoRequest": {
+                "type": "object",
+                "properties": {
+                    "documentoCliente": {
+                        "type": "string",
+                        "description": "CPF/CNPJ do cliente já cadastrado",
+                        "example": "529.982.247-25",
+                        "minLength": 1
+                    },
+                    "veiculo": {
+                        "$ref": "#/components/schemas/VeiculoOrdem"
+                    },
+                    "descricaoProblema": {
+                        "type": "string",
+                        "example": "Barulho ao frear",
+                        "maxLength": 1000,
+                        "minLength": 0
+                    },
+                    "servicos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ItemRequest"
+                        }
+                    },
+                    "pecas": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ItemRequest"
+                        }
+                    }
+                },
+                "required": [
+                    "documentoCliente",
+                    "veiculo"
+                ]
+            },
+            "ItemRequest": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Id do serviço ou da peça/insumo"
+                    },
+                    "quantidade": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "id",
+                    "quantidade"
+                ]
+            },
+            "VeiculoOrdem": {
+                "type": "object",
+                "description": "Se a placa já existir para o cliente, o veículo é reutilizado; senão é cadastrado",
+                "properties": {
+                    "placa": {
+                        "type": "string",
+                        "example": "BRA2E19",
+                        "minLength": 1
+                    },
+                    "marca": {
+                        "type": "string",
+                        "example": "Volkswagen",
+                        "maxLength": 60,
+                        "minLength": 0
+                    },
+                    "modelo": {
+                        "type": "string",
+                        "example": "Gol",
+                        "maxLength": 80,
+                        "minLength": 0
+                    },
+                    "ano": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 2020
+                    }
+                },
+                "required": [
+                    "placa"
+                ]
+            },
+            "RejeicaoRequest": {
+                "type": "object",
+                "properties": {
+                    "motivo": {
+                        "type": "string",
+                        "example": "Valor acima do esperado",
+                        "maxLength": 500,
+                        "minLength": 0
+                    }
+                }
+            },
+            "PorServico": {
+                "type": "object",
+                "properties": {
+                    "servicoId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "servico": {
+                        "type": "string"
+                    },
+                    "ordensConsideradas": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "mediaMinutos": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "TempoMedioExecucaoResponse": {
+                "type": "object",
+                "properties": {
+                    "ordensConsideradas": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "mediaGeralMinutos": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "porServico": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PorServico"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

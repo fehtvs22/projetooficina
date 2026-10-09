@@ -1,0 +1,15 @@
+target/
+.env
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Enunciado do desafio (não faz parte do código)
+Fase 1 - Tech Challenge.pdf
+
+# Artefatos de ferramentas de IDE (upgrade assistido de Java)
+.github/modernize/

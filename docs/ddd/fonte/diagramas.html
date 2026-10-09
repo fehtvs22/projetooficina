@@ -1,0 +1,300 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>Diagramas DDD — Oficina Mecânica</title>
+<style>@page{size:A4 landscape;margin:12mm}
+body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1d1d1f;font-size:12px}
+h1{font-size:24px}h2{font-size:18px;border-bottom:2px solid #333;padding-bottom:4px}
+section{page-break-after:always}section:last-child{page-break-after:auto}
+table{border-collapse:collapse;width:100%;margin-top:10px}td,th{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}
+th{background:#eee}code{font-family:Menlo,Consolas,monospace;font-size:10.5px}
+.mermaid{display:flex;justify-content:center}.mermaid svg{max-height:150mm;max-width:100%}</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:"default",securityLevel:"loose"});</script></head>
+<body><h1>Diagramas DDD — Sistema Integrado de Atendimento e Execução de Serviços</h1><section><h2>1. Mapa de contextos (Bounded Contexts)</h2><p>Por ser um MVP monolítico, os contextos são <b>módulos (pacotes) do mesmo monólito</b>, com fronteiras explícitas:
+os agregados de um contexto referenciam os de outro <b>apenas por identificador</b>, nunca por objeto.</p><pre class="mermaid">flowchart LR
+    subgraph CORE[&quot;Núcleo&quot;]
+        ATD[&quot;&lt;b&gt;Atendimento&lt;/b&gt;&lt;br/&gt;Ordem de Serviço, Orçamento,&lt;br/&gt;Status, Tempo médio&lt;br/&gt;&lt;i&gt;domain.ordemservico&lt;/i&gt;&quot;]
+    end
+    subgraph SUP[&quot;Suporte&quot;]
+        CAD[&quot;&lt;b&gt;Cadastro&lt;/b&gt;&lt;br/&gt;Cliente, Veículo&lt;br/&gt;&lt;i&gt;domain.cliente / domain.veiculo&lt;/i&gt;&quot;]
+        CAT[&quot;&lt;b&gt;Catálogo de Serviços&lt;/b&gt;&lt;br/&gt;Serviço&lt;br/&gt;&lt;i&gt;domain.servico&lt;/i&gt;&quot;]
+        EST[&quot;&lt;b&gt;Estoque&lt;/b&gt;&lt;br/&gt;Peça / Insumo&lt;br/&gt;&lt;i&gt;domain.estoque&lt;/i&gt;&quot;]
+    end
+    subgraph GEN[&quot;Genérico&quot;]
+        IAM[&quot;&lt;b&gt;Identidade e Acesso&lt;/b&gt;&lt;br/&gt;Usuário, JWT&lt;br/&gt;&lt;i&gt;infrastructure.security&lt;/i&gt;&quot;]
+    end
+    CAD -- &quot;U → D: clienteId, veiculoId&quot; --&gt; ATD
+    CAT -- &quot;U → D: servicoId + preço congelado&quot; --&gt; ATD
+    EST -- &quot;U → D: pecaId + preço; disponibilidade&quot; --&gt; ATD
+    ATD -- &quot;evento OrcamentoAprovado ⇒ baixa de estoque&quot; --&gt; EST
+    IAM -. &quot;protege /api/admin/**&quot; .-&gt; ATD
+</pre><table><tr><th>Contexto</th><th>Tipo</th><th>Responsabilidade</th><th>Relação</th></tr><tr><td>Atendimento</td><td>Core</td><td>Ciclo de vida da OS, orçamento, aprovação, status, tempo médio</td><td>Downstream (consumidor) de Cadastro, Catálogo e Estoque — *Customer/Supplier*</td></tr><tr><td>Cadastro</td><td>Suporte</td><td>Clientes (CPF/CNPJ) e veículos (placa)</td><td>Upstream</td></tr><tr><td>Catálogo de Serviços</td><td>Suporte</td><td>Serviços com preço e tempo estimado</td><td>Upstream; o preço é copiado para a OS (*Published Language* via id + snapshot)</td></tr><tr><td>Estoque</td><td>Suporte</td><td>Saldo de peças/insumos, entradas, saídas, alerta de mínimo</td><td>Upstream na inclusão; reage à aprovação do orçamento</td></tr><tr><td>Identidade e Acesso</td><td>Genérico</td><td>Login e emissão/validação de JWT</td><td>Conformista (Spring Security)</td></tr></table></section><section><h2>2. Agregados, entidades e objetos de valor</h2><p><b>Serviço de domínio:</b> <code>CalculadoraTempoMedioExecucao</code> (tempo médio geral e por serviço, a partir das OS executadas).
+<b>Portas de repositório (domínio):</b> <code>ClienteRepository</code>, <code>VeiculoRepository</code>, <code>ServicoRepository</code>, <code>PecaRepository</code>, <code>OrdemServicoRepository</code>.</p><pre class="mermaid">classDiagram
+    direction LR
+    class OrdemServico {
+        &lt;&lt;Aggregate Root&gt;&gt;
+        UUID id
+        UUID clienteId
+        UUID veiculoId
+        StatusOrdemServico status
+        String descricaoProblema
+        String diagnostico
+        SituacaoOrcamento situacaoOrcamento
+        Instant abertaEm / inicioExecucao / fimExecucao / entregueEm
+        +abrir()$
+        +iniciarDiagnostico()
+        +adicionarServico() / removerServico()
+        +adicionarPeca() / removerPeca()
+        +getOrcamento() Orcamento
+        +enviarOrcamento()
+        +aprovarOrcamento()
+        +rejeitarOrcamento()
+        +finalizar()
+        +entregar()
+        +duracaoExecucao()
+    }
+    class ItemServico {
+        &lt;&lt;Entity&gt;&gt;
+        UUID id
+        UUID servicoId
+        String descricao
+        Dinheiro precoUnitario
+        int quantidade
+        +subtotal()
+    }
+    class ItemPeca {
+        &lt;&lt;Entity&gt;&gt;
+        UUID id
+        UUID pecaId
+        String descricao
+        Dinheiro precoUnitario
+        int quantidade
+        +subtotal()
+    }
+    class HistoricoStatus {
+        &lt;&lt;Value Object&gt;&gt;
+        StatusOrdemServico status
+        Instant ocorridoEm
+    }
+    class Orcamento {
+        &lt;&lt;Value Object&gt;&gt;
+        Dinheiro valorServicos
+        Dinheiro valorPecas
+        Dinheiro valorTotal
+        SituacaoOrcamento situacao
+    }
+    class StatusOrdemServico {
+        &lt;&lt;Enumeration&gt;&gt;
+        RECEBIDA
+        EM_DIAGNOSTICO
+        AGUARDANDO_APROVACAO
+        EM_EXECUCAO
+        FINALIZADA
+        ENTREGUE
+    }
+
+    class Cliente {
+        &lt;&lt;Aggregate Root&gt;&gt;
+        UUID id
+        String nome
+        Documento documento
+        Email email
+        String telefone
+    }
+    class Documento {
+        &lt;&lt;Value Object&gt;&gt;
+        String numero
+        TipoDocumento tipo
+        +de(String)$
+        +formatado()
+    }
+    class Email {
+        &lt;&lt;Value Object&gt;&gt;
+        String endereco
+    }
+    class Veiculo {
+        &lt;&lt;Aggregate Root&gt;&gt;
+        UUID id
+        Placa placa
+        String marca
+        String modelo
+        int ano
+        UUID clienteId
+    }
+    class Placa {
+        &lt;&lt;Value Object&gt;&gt;
+        String valor
+        +mercosul()
+    }
+    class Servico {
+        &lt;&lt;Aggregate Root&gt;&gt;
+        UUID id
+        String nome
+        Dinheiro preco
+        int tempoEstimadoMinutos
+    }
+    class Peca {
+        &lt;&lt;Aggregate Root&gt;&gt;
+        UUID id
+        String codigo
+        TipoPeca tipo
+        Dinheiro preco
+        int quantidadeEstoque
+        int estoqueMinimo
+        +baixar()
+        +repor()
+    }
+    class Dinheiro {
+        &lt;&lt;Value Object&gt;&gt;
+        BigDecimal valor
+        +somar()
+        +multiplicar()
+    }
+
+    OrdemServico *-- &quot;0..*&quot; ItemServico
+    OrdemServico *-- &quot;0..*&quot; ItemPeca
+    OrdemServico *-- &quot;1..*&quot; HistoricoStatus
+    OrdemServico ..&gt; Orcamento : calcula
+    OrdemServico --&gt; StatusOrdemServico
+    Cliente *-- Documento
+    Cliente *-- Email
+    Veiculo *-- Placa
+    OrdemServico ..&gt; Cliente : clienteId
+    OrdemServico ..&gt; Veiculo : veiculoId
+    ItemServico ..&gt; Servico : servicoId
+    ItemPeca ..&gt; Peca : pecaId
+    Veiculo ..&gt; Cliente : clienteId
+    Peca *-- Dinheiro
+    Servico *-- Dinheiro
+</pre></section><section><h2>3. Ciclo de vida da Ordem de Serviço (máquina de estados)</h2><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; RECEBIDA : abrir OS
+    RECEBIDA --&gt; EM_DIAGNOSTICO : iniciar diagnóstico
+    EM_DIAGNOSTICO --&gt; AGUARDANDO_APROVACAO : enviar orçamento&lt;br/&gt;(≥1 item e estoque disponível)
+    AGUARDANDO_APROVACAO --&gt; EM_EXECUCAO : aprovar orçamento&lt;br/&gt;(baixa estoque)
+    AGUARDANDO_APROVACAO --&gt; FINALIZADA : rejeitar orçamento&lt;br/&gt;(sem execução)
+    EM_EXECUCAO --&gt; FINALIZADA : finalizar execução
+    FINALIZADA --&gt; ENTREGUE : entregar veículo
+    ENTREGUE --&gt; [*]
+    note right of RECEBIDA : itens (serviços/peças)\nsó podem mudar em\nRECEBIDA e EM_DIAGNOSTICO
+</pre></section><section><h2>4. Eventos de domínio</h2><p>Os eventos são acumulados no agregado (<code>AgregadoRaiz</code>), publicados pela aplicação através da porta
+<code>PublicadorEventos</code> e tratados <b>após o commit</b> (<code>@TransactionalEventListener</code>).</p><table><tr><th>Evento</th><th>Emitido por</th><th>Quando</th><th>Reação (política)</th></tr><tr><td><code>OrdemServicoAberta</code></td><td><code>OrdemServico.abrir()</code></td><td>OS criada</td><td>—</td></tr><tr><td><code>StatusOrdemServicoAlterado</code></td><td>toda transição de status</td><td>mudança de etapa</td><td>notificar o cliente (<code>NotificacoesListener</code>)</td></tr><tr><td><code>OrcamentoEnviado</code></td><td><code>enviarOrcamento()</code></td><td>orçamento disponível</td><td>notificar o cliente para aprovação</td></tr><tr><td><code>OrcamentoAprovado</code></td><td><code>aprovarOrcamento()</code></td><td>cliente autorizou</td><td>iniciar execução + baixar estoque (mesma transação)</td></tr><tr><td><code>OrcamentoRejeitado</code></td><td><code>rejeitarOrcamento()</code></td><td>cliente recusou</td><td>finalizar sem execução</td></tr><tr><td><code>OrdemServicoFinalizada</code></td><td><code>finalizar()</code></td><td>execução concluída</td><td>avisar que o veículo está pronto</td></tr><tr><td><code>VeiculoEntregue</code></td><td><code>entregar()</code></td><td>veículo devolvido</td><td>encerra a OS</td></tr><tr><td><code>EstoqueAbaixoDoMinimo</code></td><td><code>Peca.baixar()</code></td><td>saldo &lt; mínimo</td><td>alerta de reposição</td></tr></table></section><section><h2>5. Arquitetura: Clean Architecture em monólito</h2><p>A regra de dependência (setas sempre para dentro) é verificada automaticamente pelo teste
+<code>ArquiteturaTest</code> (ArchUnit): o domínio e a aplicação <b>não importam</b> Spring, JPA nem Jackson.</p><pre class="mermaid">flowchart TB
+    subgraph EXT[&quot;Adaptadores (frameworks)&quot;]
+        direction LR
+        REST[&quot;&lt;b&gt;interfaces.rest&lt;/b&gt;&lt;br/&gt;Controllers, DTOs, ProblemDetail,&lt;br/&gt;OpenAPI&quot;]
+        INFRA[&quot;&lt;b&gt;infrastructure&lt;/b&gt;&lt;br/&gt;JPA (entities, adapters), Flyway,&lt;br/&gt;Spring Security/JWT, eventos,&lt;br/&gt;wiring + transações&quot;]
+    end
+    subgraph APP[&quot;Aplicação&quot;]
+        UC[&quot;&lt;b&gt;application&lt;/b&gt;&lt;br/&gt;Casos de uso (AbrirOrdemServico, ResponderOrcamento, ...)&lt;br/&gt;Portas de saída: PublicadorEventos, AutenticacaoPort&quot;]
+    end
+    subgraph DOM[&quot;Domínio (Java puro)&quot;]
+        D[&quot;&lt;b&gt;domain&lt;/b&gt;&lt;br/&gt;Agregados, Entidades, Objetos de Valor,&lt;br/&gt;Eventos, Serviços de domínio, Portas de repositório&quot;]
+    end
+    REST --&gt; UC
+    INFRA --&gt; UC
+    INFRA -. implementa portas .-&gt; D
+    UC --&gt; D
+</pre></section><section><h2>6. Sequência: aprovação do orçamento pelo cliente</h2><pre class="mermaid">sequenceDiagram
+    autonumber
+    actor C as Cliente
+    participant API as AcompanhamentoClienteController
+    participant TX as TransactionInterceptor
+    participant UC as ResponderOrcamentoUseCase
+    participant OS as OrdemServico (agregado)
+    participant PR as PecaRepository
+    participant P as Peca (agregado)
+    participant EV as PublicadorEventos
+    C-&gt;&gt;API: POST /api/publico/ordens-servico/{id}/orcamento/resposta&lt;br/&gt;X-Documento-Cliente, {aprovado:true}
+    API-&gt;&gt;TX: aprovarPeloCliente(id, documento)
+    TX-&gt;&gt;UC: BEGIN
+    UC-&gt;&gt;UC: obterDoCliente(id, documento)
+    UC-&gt;&gt;OS: aprovarOrcamento(agora)
+    OS--&gt;&gt;UC: status EM_EXECUCAO + eventos
+    loop cada peça (ordenadas por id)
+        UC-&gt;&gt;PR: buscarPorIdParaAtualizacao (SELECT ... FOR UPDATE)
+        UC-&gt;&gt;P: baixar(qtd)
+        alt saldo insuficiente
+            P--&gt;&gt;UC: EstoqueInsuficienteException
+            UC--&gt;&gt;TX: exceção ⇒ ROLLBACK (nada é gravado)
+            TX--&gt;&gt;API: 422 Regra de negócio violada
+        end
+        UC-&gt;&gt;PR: salvar(peça)
+    end
+    UC-&gt;&gt;EV: publicar(eventos)
+    TX-&gt;&gt;TX: COMMIT
+    EV--&gt;&gt;C: notificação (após commit)
+    API--&gt;&gt;C: 200 OS em EM_EXECUCAO
+</pre></section><section><h2>7. Modelo de dados (PostgreSQL)</h2><pre class="mermaid">erDiagram
+    clientes ||--o{ veiculos : possui
+    clientes ||--o{ ordens_servico : solicita
+    veiculos ||--o{ ordens_servico : atendido_em
+    ordens_servico ||--o{ os_itens_servico : contem
+    ordens_servico ||--o{ os_itens_peca : contem
+    ordens_servico ||--|{ os_historico_status : registra
+    servicos ||--o{ os_itens_servico : referenciado
+    pecas ||--o{ os_itens_peca : referenciado
+    clientes {
+        uuid id PK
+        varchar documento UK
+        varchar tipo_documento
+        varchar nome
+        varchar email
+    }
+    veiculos {
+        uuid id PK
+        varchar placa UK
+        varchar marca
+        varchar modelo
+        int ano
+        uuid cliente_id FK
+    }
+    servicos {
+        uuid id PK
+        varchar nome
+        numeric preco
+        int tempo_estimado_minutos
+    }
+    pecas {
+        uuid id PK
+        varchar codigo UK
+        varchar tipo
+        numeric preco
+        int quantidade_estoque
+        int estoque_minimo
+    }
+    ordens_servico {
+        uuid id PK
+        uuid cliente_id FK
+        uuid veiculo_id FK
+        varchar status
+        varchar situacao_orcamento
+        timestamptz inicio_execucao
+        timestamptz fim_execucao
+        bigint versao
+    }
+    os_itens_servico {
+        uuid id PK
+        uuid ordem_servico_id FK
+        uuid servico_id FK
+        numeric preco_unitario
+        int quantidade
+    }
+    os_itens_peca {
+        uuid id PK
+        uuid ordem_servico_id FK
+        uuid peca_id FK
+        numeric preco_unitario
+        int quantidade
+    }
+    os_historico_status {
+        uuid id PK
+        uuid ordem_servico_id FK
+        varchar status
+        timestamptz ocorrido_em
+    }
+    usuarios {
+        uuid id PK
+        varchar username UK
+        varchar senha_hash
+        varchar perfil
+    }
+</pre></section><section><h2>8. Relação documentação ↔ código</h2><table><tr><th>Elemento DDD</th><th>Implementação</th></tr><tr><td>Agregado Ordem de Serviço</td><td><code>src/main/java/br/com/oficina/domain/ordemservico/OrdemServico.java</code></td></tr><tr><td>Regras de transição</td><td><code>StatusOrdemServico.proximosPermitidos()</code> + <code>OrdemServico.alterarStatus()</code></td></tr><tr><td>Objetos de valor</td><td><code>Documento</code>, <code>Placa</code>, <code>Dinheiro</code>, <code>Email</code>, <code>Orcamento</code>, <code>HistoricoStatus</code></td></tr><tr><td>Eventos de domínio</td><td><code>domain/ordemservico/evento/*</code>, <code>domain/estoque/EstoqueAbaixoDoMinimo</code></td></tr><tr><td>Políticas</td><td><code>ResponderOrcamentoUseCase</code> (baixa de estoque), <code>NotificacoesListener</code> (notificações)</td></tr><tr><td>Comandos</td><td>métodos públicos dos casos de uso em <code>application/<b></code> ↔ endpoints em <code>interfaces/rest/</b></code></td></tr><tr><td>Repositórios (portas/adaptadores)</td><td><code>domain/**/…Repository</code> ↔ <code>infrastructure/persistence/adapter/*</code></td></tr><tr><td>Serviço de domínio</td><td><code>CalculadoraTempoMedioExecucao</code></td></tr><tr><td>Testes das regras</td><td><code>src/test/java/br/com/oficina/domain/**</code> (100% de linhas cobertas)</td></tr></table></section></body></html>
