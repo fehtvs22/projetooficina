@@ -1,0 +1,2 @@
+# AWS-0104: egress HTTPS público é intencional para acesso a ECR, SSM e atualizações da EC2.
+AWS-0104
