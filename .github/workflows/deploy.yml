@@ -66,15 +66,19 @@ jobs:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           INSTANCIA: ${{ vars.EC2_INSTANCE_ID }}
         run: |
-          compose=$(base64 -w0 deploy/docker-compose.prod.yml)
-          script=$(base64 -w0 deploy/deploy.sh)
-          backup=$(base64 -w0 deploy/backup.sh)
-          jq -n --arg c "$compose" --arg s "$script" --arg b "$backup" \
-                --arg env "REGISTRY=$REGISTRY IMAGE_TAG=$IMAGE_TAG AWS_REGION=$AWS_REGION PROJETO=$PROJETO" '
-            { commands: [
-                "bash -c \"set -euo pipefail; mkdir -p /opt/oficina/backups; echo $c | base64 -d > /opt/oficina/docker-compose.yml; echo $s | base64 -d > /opt/oficina/deploy.sh; echo $b | base64 -d > /opt/oficina/backup.sh; chmod +x /opt/oficina/*.sh; $env bash /opt/oficina/deploy.sh\""
-              ],
-              executionTimeout: ["600"] }' > parametros.json
+          # Monta um script bash completo e envia em base64. O SSM executa com /bin/sh (dash no Ubuntu),
+          # que não tem "pipefail"; por isso o único comando enviado só decodifica e entrega ao bash.
+          {
+            echo 'set -euo pipefail'
+            echo 'mkdir -p /opt/oficina/backups'
+            echo "echo $(base64 -w0 deploy/docker-compose.prod.yml) | base64 -d > /opt/oficina/docker-compose.yml"
+            echo "echo $(base64 -w0 deploy/deploy.sh) | base64 -d > /opt/oficina/deploy.sh"
+            echo "echo $(base64 -w0 deploy/backup.sh) | base64 -d > /opt/oficina/backup.sh"
+            echo 'chmod +x /opt/oficina/deploy.sh /opt/oficina/backup.sh'
+            echo "REGISTRY=$REGISTRY IMAGE_TAG=$IMAGE_TAG AWS_REGION=$AWS_REGION PROJETO=$PROJETO bash /opt/oficina/deploy.sh"
+          } > remoto.sh
+          jq -n --arg script "$(base64 -w0 remoto.sh)" \
+            '{ commands: ["echo \($script) | base64 -d | bash"], executionTimeout: ["600"] }' > parametros.json
 
           id=$(aws ssm send-command \
                 --instance-ids "$INSTANCIA" \
