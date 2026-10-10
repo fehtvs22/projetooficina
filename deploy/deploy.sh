@@ -17,6 +17,7 @@ umask 077
 cat > .env <<ENV
 REGISTRY=$REGISTRY
 IMAGE_TAG=$IMAGE_TAG
+DOMINIO=${DOMINIO:-}
 DB_USERNAME=oficina
 DB_PASSWORD=$(parametro db-password)
 JWT_SECRET=$(parametro jwt-secret)

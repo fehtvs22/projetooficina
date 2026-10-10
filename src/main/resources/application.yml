@@ -41,5 +41,7 @@ management:
         enabled: true
 
 server:
+  # Respeita X-Forwarded-* do proxy (Caddy/Nginx): URLs geradas, como as do Swagger, saem em https
+  forward-headers-strategy: framework
   error:
     include-stacktrace: never

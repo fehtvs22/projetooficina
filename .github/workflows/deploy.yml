@@ -65,6 +65,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           INSTANCIA: ${{ vars.EC2_INSTANCE_ID }}
+          DOMINIO: ${{ vars.DOMINIO }}
         run: |
           # Monta um script bash completo e envia em base64. O SSM executa com /bin/sh (dash no Ubuntu),
           # que não tem "pipefail"; por isso o único comando enviado só decodifica e entrega ao bash.
@@ -74,8 +75,9 @@ jobs:
             echo "echo $(base64 -w0 deploy/docker-compose.prod.yml) | base64 -d > /opt/oficina/docker-compose.yml"
             echo "echo $(base64 -w0 deploy/deploy.sh) | base64 -d > /opt/oficina/deploy.sh"
             echo "echo $(base64 -w0 deploy/backup.sh) | base64 -d > /opt/oficina/backup.sh"
+            echo "echo $(base64 -w0 deploy/Caddyfile) | base64 -d > /opt/oficina/Caddyfile"
             echo 'chmod +x /opt/oficina/deploy.sh /opt/oficina/backup.sh'
-            echo "REGISTRY=$REGISTRY IMAGE_TAG=$IMAGE_TAG AWS_REGION=$AWS_REGION PROJETO=$PROJETO bash /opt/oficina/deploy.sh"
+            echo "REGISTRY=$REGISTRY IMAGE_TAG=$IMAGE_TAG AWS_REGION=$AWS_REGION PROJETO=$PROJETO DOMINIO=$DOMINIO bash /opt/oficina/deploy.sh"
           } > remoto.sh
           jq -n --arg script "$(base64 -w0 remoto.sh)" \
             '{ commands: ["echo \($script) | base64 -d | bash"], executionTimeout: ["600"] }' > parametros.json

@@ -2,7 +2,7 @@
 # Variáveis (REGISTRY, IMAGE_TAG e segredos) chegam pelo .env gerado em deploy.sh.
 #
 # Orçamento de memória para uma t3.small (2 GB + 2 GB de swap):
-#   postgres 384 MB · api 768 MB · frontend 64 MB · sistema/Docker ~500 MB
+#   postgres 384 MB · api 768 MB · frontend 64 MB · caddy 96 MB · sistema/Docker ~500 MB
 
 name: oficina
 
@@ -54,10 +54,28 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-    ports:
-      - '80:8080'
     mem_limit: 64m
+    logging: *logs
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    environment:
+      DOMINIO: ${DOMINIO:-}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificados emitidos: perder o volume força nova emissão (e a Let's Encrypt limita emissões)
+      - caddy-dados:/data
+      - caddy-config:/config
+    mem_limit: 96m
     logging: *logs
 
 volumes:
   oficina-dados:
+  caddy-dados:
+  caddy-config:
