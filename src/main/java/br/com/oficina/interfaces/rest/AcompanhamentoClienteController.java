@@ -21,7 +21,8 @@ import java.util.UUID;
 
 /**
  * API do cliente: acompanhar a OS e aprovar/rejeitar o orçamento. O cliente se identifica pelo CPF/CNPJ
- * enviado no cabeçalho, e só enxerga as próprias ordens de serviço.
+ * enviado no cabeçalho, e só enxerga as próprias ordens de serviço. As respostas não devolvem nome nem
+ * documento do cliente, e documento sem cadastro não é distinguido de cliente sem OS.
  */
 @RestController
 @RequestMapping("/api/publico/ordens-servico")
@@ -42,7 +43,7 @@ public class AcompanhamentoClienteController {
     @Operation(summary = "Lista as OS do cliente")
     public List<OrdemServicoResponse> listar(
             @Parameter(example = "529.982.247-25") @RequestHeader(CABECALHO_DOCUMENTO) String documento) {
-        return consultar.listarDoCliente(documento).stream().map(OrdemServicoResponse::de).toList();
+        return consultar.listarDoCliente(documento).stream().map(d -> OrdemServicoResponse.de(d).semDadosDoCliente()).toList();
     }
 
     @GetMapping("/{id}")
@@ -50,7 +51,7 @@ public class AcompanhamentoClienteController {
     public OrdemServicoResponse consultar(
             @PathVariable UUID id,
             @Parameter(example = "529.982.247-25") @RequestHeader(CABECALHO_DOCUMENTO) String documento) {
-        return OrdemServicoResponse.de(consultar.consultarPeloCliente(id, documento));
+        return OrdemServicoResponse.de(consultar.consultarPeloCliente(id, documento)).semDadosDoCliente();
     }
 
     @PostMapping("/{id}/orcamento/resposta")
@@ -61,6 +62,6 @@ public class AcompanhamentoClienteController {
             @Valid @RequestBody RespostaOrcamentoRequest request) {
         return OrdemServicoResponse.de(Boolean.TRUE.equals(request.aprovado())
                 ? orcamento.aprovarPeloCliente(id, documento)
-                : orcamento.rejeitarPeloCliente(id, documento, request.motivo()));
+                : orcamento.rejeitarPeloCliente(id, documento, request.motivo())).semDadosDoCliente();
     }
 }

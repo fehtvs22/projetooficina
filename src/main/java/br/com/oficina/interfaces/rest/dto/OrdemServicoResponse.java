@@ -69,6 +69,15 @@ public record OrdemServicoResponse(UUID id,
                 os.duracaoExecucao().map(Duration::toMinutes).orElse(null));
     }
 
+    /**
+     * Versão para a rota pública: omite os dados do cliente (nome e CPF/CNPJ), que o próprio cliente já
+     * conhece e que não precisam trafegar de volta ao navegador.
+     */
+    public OrdemServicoResponse semDadosDoCliente() {
+        return new OrdemServicoResponse(id, status, null, veiculo, descricaoProblema, diagnostico, servicos, pecas,
+                orcamento, historico, abertaEm, inicioExecucao, fimExecucao, entregueEm, duracaoExecucaoMinutos);
+    }
+
     private static Item item(ItemServico i) {
         return new Item(i.getId(), i.getServicoId(), i.getDescricao(), i.getPrecoUnitario().valor(), i.getQuantidade(),
                 i.subtotal().valor());

@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -76,7 +77,9 @@ class FluxoOrdemServicoIntegrationTest extends IntegracaoBase {
                 .andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO"))
                 .andExpect(jsonPath("$.orcamento.valorTotal").value(342.10));
         mvc.perform(get("/api/publico/ordens-servico").header(CABECALHO_DOCUMENTO, cpf))
-                .andExpect(jsonPath("$[*].id", hasItem(osId)));
+                .andExpect(jsonPath("$[*].id", hasItem(osId)))
+                .andExpect(jsonPath("$[0].cliente").doesNotExist());
+        consultaCliente(osId, cpf).andExpect(jsonPath("$.cliente").doesNotExist());
 
         // Itens bloqueados após o envio
         adminPost("/api/admin/ordens-servico/" + osId + "/servicos", "{\"id\":\"%s\",\"quantidade\":1}"
@@ -175,6 +178,10 @@ class FluxoOrdemServicoIntegrationTest extends IntegracaoBase {
         String osId = abrirOrdem(cpf, "");
 
         consultaCliente(osId, novoCpf()).andExpect(status().isNotFound());
+        // Documento sem cadastro: lista vazia, sem 404 nem eco do CPF na resposta
+        mvc.perform(get("/api/publico/ordens-servico").header(CABECALHO_DOCUMENTO, novoCpf()))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
         consultaCliente(osId, "documento-invalido").andExpect(status().isBadRequest());
         mvc.perform(get("/api/publico/ordens-servico/" + osId)).andExpect(status().isBadRequest());
         respostaCliente(osId, cpf, "{\"aprovado\":true}").andExpect(status().isUnprocessableContent());

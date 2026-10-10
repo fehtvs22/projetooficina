@@ -74,7 +74,7 @@ resource "aws_iam_role" "github_deploy" {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           # Só o job que usa o environment de produção deste repositório pode assumir o papel
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repositorio}:environment:${var.github_ambiente}"
+          "token.actions.githubusercontent.com:sub" = "repo:fehtvs22@206714206/projetooficina@1411129260:environment:${var.github_ambiente}"
         }
       }
     }]

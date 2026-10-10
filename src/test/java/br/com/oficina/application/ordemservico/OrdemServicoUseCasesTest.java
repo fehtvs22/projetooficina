@@ -309,8 +309,7 @@ class OrdemServicoUseCasesTest {
             assertThat(consultar.listar(StatusOrdemServico.RECEBIDA)).extracting(d -> d.ordemServico().getId())
                     .containsExactly(a);
             assertThat(consultar.listarDoCliente(CPF)).hasSize(2);
-            assertThatThrownBy(() -> consultar.listarDoCliente("11.222.333/0001-81"))
-                    .isInstanceOf(RecursoNaoEncontradoException.class);
+            assertThat(consultar.listarDoCliente("11.222.333/0001-81")).isEmpty();
         }
 
         @Test

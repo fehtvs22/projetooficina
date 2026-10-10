@@ -1,7 +1,5 @@
 package br.com.oficina.application.ordemservico;
 
-import br.com.oficina.application.shared.RecursoNaoEncontradoException;
-import br.com.oficina.domain.cliente.Cliente;
 import br.com.oficina.domain.cliente.ClienteRepository;
 import br.com.oficina.domain.cliente.Documento;
 import br.com.oficina.domain.ordemservico.OrdemServicoRepository;
@@ -38,10 +36,13 @@ public class ConsultarOrdensServicoUseCase {
         return ordensServico.detalhar(ordensServico.obterDoCliente(id, documento));
     }
 
+    /**
+     * Documento sem cadastro devolve lista vazia, como um cliente sem OS: a rota é pública e não deve
+     * revelar quais CPFs/CNPJs são clientes da oficina.
+     */
     public List<OrdemServicoDetalhe> listarDoCliente(String documento) {
-        Documento doc = Documento.de(documento);
-        Cliente cliente = clientes.buscarPorDocumento(doc)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente", doc.formatado()));
-        return ordens.listarPorCliente(cliente.getId()).stream().map(ordensServico::detalhar).toList();
+        return clientes.buscarPorDocumento(Documento.de(documento))
+                .map(cliente -> ordens.listarPorCliente(cliente.getId()).stream().map(ordensServico::detalhar).toList())
+                .orElse(List.of());
     }
 }
