@@ -72,13 +72,7 @@ jobs:
           jq -n --arg c "$compose" --arg s "$script" --arg b "$backup" \
                 --arg env "REGISTRY=$REGISTRY IMAGE_TAG=$IMAGE_TAG AWS_REGION=$AWS_REGION PROJETO=$PROJETO" '
             { commands: [
-                "set -euo pipefail",
-                "mkdir -p /opt/oficina/backups",
-                "echo \($c) | base64 -d > /opt/oficina/docker-compose.yml",
-                "echo \($s) | base64 -d > /opt/oficina/deploy.sh",
-                "echo \($b) | base64 -d > /opt/oficina/backup.sh",
-                "chmod +x /opt/oficina/*.sh",
-                "\($env) /opt/oficina/deploy.sh"
+                "bash -c \"set -euo pipefail; mkdir -p /opt/oficina/backups; echo $c | base64 -d > /opt/oficina/docker-compose.yml; echo $s | base64 -d > /opt/oficina/deploy.sh; echo $b | base64 -d > /opt/oficina/backup.sh; chmod +x /opt/oficina/*.sh; $env bash /opt/oficina/deploy.sh\""
               ],
               executionTimeout: ["600"] }' > parametros.json
 
