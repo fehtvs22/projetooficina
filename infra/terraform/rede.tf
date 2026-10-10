@@ -27,9 +27,11 @@ resource "aws_vpc_security_group_ingress_rule" "https" {
   to_port           = 443
 }
 
-resource "aws_vpc_security_group_egress_rule" "tudo" {
+resource "aws_vpc_security_group_egress_rule" "https" {
   security_group_id = aws_security_group.app.id
-  description       = "Saida para atualizacoes, ECR e SSM"
+  description       = "Saida HTTPS para atualizacoes, ECR e SSM"
   cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
 }
