@@ -8,6 +8,7 @@ pós-graduação **SOAT — Software Architecture**.
 | **Vídeo da entrega** | _⟨link do YouTube⟩_ |
 | **Documentação DDD (Miro)** | _⟨link do board⟩_ — cópia exportada em [`docs/ddd/`](docs/ddd) |
 | **Swagger (local)** | http://localhost:8080/swagger-ui.html |
+| **Front-end (local)** | http://localhost:3000 — detalhes em [`frontend/README.md`](frontend/README.md) |
 
 ---
 
@@ -151,6 +152,7 @@ cp .env.example .env        # ajuste as senhas e a chave JWT (veja abaixo)
 docker compose up -d --build
 ```
 
+- Front-end: http://localhost:3000 (área da oficina e acompanhamento do cliente em `/acompanhamento`)
 - API: http://localhost:8080 · Swagger: http://localhost:8080/swagger-ui.html · Health: http://localhost:8080/actuator/health
 - Para gerar uma chave JWT forte: `openssl rand -base64 48`
 - Se a porta 5432 já estiver em uso na sua máquina, altere `DB_PORTA_HOST` no `.env`.
@@ -168,6 +170,11 @@ export DB_URL=jdbc:postgresql://localhost:${DB_PORTA_HOST:-5432}/oficina
 
 O Flyway cria o esquema e carrega um catálogo inicial (5 serviços e 4 peças/insumos) na primeira execução.
 
+### Opção C — produção na AWS (EC2 + Terraform + GitHub Actions)
+
+Passo a passo completo em [`docs/guias/deploy-aws.md`](docs/guias/deploy-aws.md): o Terraform (`infra/terraform`)
+cria a infraestrutura e cada push na `main` que passa no CI é publicado automaticamente numa EC2.
+
 ### Variáveis de ambiente
 
 | Variável | Obrigatória | Descrição |
@@ -178,6 +185,7 @@ O Flyway cria o esquema e carrega um catálogo inicial (5 serviços e 4 peças/i
 | `JWT_EXPIRACAO_MINUTOS` | não (60) | Validade do token |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | sim (senha) | Usuário administrador criado na primeira inicialização |
 | `DB_PORTA_HOST` | não (5432) | Porta do PostgreSQL publicada no host |
+| `FRONTEND_PORTA_HOST` | não (3000) | Porta do front-end publicada no host |
 
 ## 8. Autenticação e credenciais de demonstração
 
@@ -271,6 +279,9 @@ O CI repete a análise a cada push/PR.
 │   │   ├── evento/                 #   publicação e tratamento dos eventos de domínio
 │   │   └── config/                 #   composição dos casos de uso e transações
 │   └── interfaces/rest/            # Controllers, DTOs, tratamento de erros, OpenAPI
+├── frontend/                       # SPA React + TypeScript (ver frontend/README.md)
+├── infra/terraform/                # Infraestrutura AWS (EC2, ECR, IAM/OIDC, segredos)
+├── deploy/                         # Compose de produção e scripts executados na EC2
 ├── src/main/resources
 │   ├── application.yml
 │   └── db/migration/               # Flyway: V1 esquema, V2 catálogo inicial

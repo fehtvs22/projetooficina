@@ -33,5 +33,13 @@ services:
     ports:
       - "8080:8080"
 
+  frontend:
+    build: ./frontend
+    container_name: oficina-frontend
+    depends_on:
+      - app
+    ports:
+      - "${FRONTEND_PORTA_HOST:-3000}:8080"
+
 volumes:
   oficina-dados:

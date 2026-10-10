@@ -1,0 +1,63 @@
+# Compose de produção (EC2). As imagens vêm do ECR; nada é compilado no servidor.
+# Variáveis (REGISTRY, IMAGE_TAG e segredos) chegam pelo .env gerado em deploy.sh.
+#
+# Orçamento de memória para uma t3.small (2 GB + 2 GB de swap):
+#   postgres 384 MB · api 768 MB · frontend 64 MB · sistema/Docker ~500 MB
+
+name: oficina
+
+x-logs: &logs
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: oficina
+      POSTGRES_USER: ${DB_USERNAME:?}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+    command: ['postgres', '-c', 'shared_buffers=96MB', '-c', 'max_connections=30']
+    volumes:
+      - oficina-dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d oficina']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    mem_limit: 384m
+    logging: *logs
+
+  app:
+    image: ${REGISTRY:?}/oficina-api:${IMAGE_TAG:?}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/oficina
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?}
+      JWT_EXPIRACAO_MINUTOS: ${JWT_EXPIRACAO_MINUTOS:-60}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
+    # A JVM usa 75% do limite do container (MaxRAMPercentage no Dockerfile)
+    mem_limit: 768m
+    logging: *logs
+
+  frontend:
+    image: ${REGISTRY}/oficina-frontend:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '80:8080'
+    mem_limit: 64m
+    logging: *logs
+
+volumes:
+  oficina-dados:

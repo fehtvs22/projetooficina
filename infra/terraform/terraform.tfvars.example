@@ -1,0 +1,7 @@
+# Copie para terraform.tfvars e ajuste.
+github_repositorio = "fehtvs22/projetooficina"
+regiao             = "us-east-1"
+tipo_instancia     = "t3.small"
+
+# Mude para false se a conta já tiver o provedor OIDC do GitHub (erro "EntityAlreadyExists")
+criar_provedor_oidc_github = true

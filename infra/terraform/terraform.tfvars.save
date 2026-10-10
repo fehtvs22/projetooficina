@@ -1,0 +1,18 @@
+0# Copiexxxxxcd
+
+PICO 5.09                                     File: terraform.tfvars                                     Modified  
+
+# Copie para terraform.tfvars e ajuste.
+github_repositorio = "fehtvs22/projetooficina"
+regiao             = "us-east-1"
+tipo_instancia     = "t3.small"
+
+# Mude para false se a conta já tiver o provedor OIDC do GitHub (erro "EntityAlreadyExists")
+criar_provedor_oidc_github = true'''´[=´ç.ç;~[p=lp,´ç.~[;
+][~ç´~çp,lm k,q	çlç´~]'~ para terraform.tfvars e ajuste.
+git00xxxhub_repositorio = "fehtvs22/projetooficina"
+re0giao             = "us-east-1"
+t0ipo_instancia     = "t3.small"
+0
+# Mude para false se a conta já tiver o provedor OIDC do GitHub (erro "EntityAlreadyExists")
+c0riar_provedor_oidc_github = true

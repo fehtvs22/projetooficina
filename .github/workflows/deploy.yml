@@ -1,0 +1,103 @@
+name: Deploy
+
+# Roda depois que o CI passa na main (ou manualmente pela aba Actions).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC: troca o token do GitHub por credenciais temporárias da AWS
+  contents: read
+
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build das imagens e deploy na EC2
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: producao
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      PROJETO: ${{ vars.PROJETO || 'oficina' }}
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.IMAGE_TAG }}
+
+      - name: Credenciais AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login no ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Imagem da API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.PROJETO }}-api:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Imagem do front-end
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.PROJETO }}-frontend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Deploy na EC2 via SSM
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          INSTANCIA: ${{ vars.EC2_INSTANCE_ID }}
+        run: |
+          compose=$(base64 -w0 deploy/docker-compose.prod.yml)
+          script=$(base64 -w0 deploy/deploy.sh)
+          backup=$(base64 -w0 deploy/backup.sh)
+          jq -n --arg c "$compose" --arg s "$script" --arg b "$backup" \
+                --arg env "REGISTRY=$REGISTRY IMAGE_TAG=$IMAGE_TAG AWS_REGION=$AWS_REGION PROJETO=$PROJETO" '
+            { commands: [
+                "set -euo pipefail",
+                "mkdir -p /opt/oficina/backups",
+                "echo \($c) | base64 -d > /opt/oficina/docker-compose.yml",
+                "echo \($s) | base64 -d > /opt/oficina/deploy.sh",
+                "echo \($b) | base64 -d > /opt/oficina/backup.sh",
+                "chmod +x /opt/oficina/*.sh",
+                "\($env) /opt/oficina/deploy.sh"
+              ],
+              executionTimeout: ["600"] }' > parametros.json
+
+          id=$(aws ssm send-command \
+                --instance-ids "$INSTANCIA" \
+                --document-name AWS-RunShellScript \
+                --comment "deploy $IMAGE_TAG" \
+                --parameters file://parametros.json \
+                --query Command.CommandId --output text)
+          echo "Comando SSM: $id"
+
+          # Aguarda (até ~10 min) e mostra a saída do servidor
+          status=InProgress
+          for _ in $(seq 1 120); do
+            status=$(aws ssm get-command-invocation --command-id "$id" --instance-id "$INSTANCIA" \
+                      --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in Pending|InProgress|Delayed) sleep 5 ;; *) break ;; esac
+          done
+          aws ssm get-command-invocation --command-id "$id" --instance-id "$INSTANCIA" \
+            --query '[StandardOutputContent, StandardErrorContent]' --output text
+          echo "Status: $status"
+          [ "$status" = "Success" ]
