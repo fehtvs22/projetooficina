@@ -63,7 +63,8 @@ services:
     depends_on:
       - frontend
     environment:
-      DOMINIO: ${DOMINIO:-}
+      # Sem domínio, ":80" atende só HTTP pelo IP (o Caddy não aplica o padrão do Caddyfile a variável vazia)
+      DOMINIO: ${DOMINIO:-:80}
     ports:
       - '80:80'
       - '443:443'

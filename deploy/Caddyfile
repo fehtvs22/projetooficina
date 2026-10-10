@@ -1,6 +1,6 @@
 # Proxy de borda: termina o HTTPS e encaminha tudo ao Nginx do front-end.
 # Com DOMINIO definido (ex.: oficina.duckdns.org), o Caddy emite e renova sozinho o certificado
 # Let's Encrypt e redireciona HTTP -> HTTPS. Sem DOMINIO, atende só HTTP na porta 80 (acesso pelo IP).
-{$DOMINIO::80} {
+{$DOMINIO} {
 	reverse_proxy frontend:8080
 }
